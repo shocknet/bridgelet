@@ -1,0 +1,13 @@
+{
+  "domain": "bridgelet.nip69.dev",
+  "port": 3000,
+  "aliases": {
+    "alice": {
+      "nip69": "noffer1qqs8dm297qxw57avt8vdpd7jqjzg75ce67ukc9q0ldhuh24tpgfagnsprfmhxue69uhhxarjvee8jtnndphkx6ewdejhgam0wf4syspjxcmnjvmx8yerzdmpxsmkxce5vsurwce4xa3nyctpvgunxdf3xajrqvmyv5mxxvpnxa3n2e3kx3nxxeryvcmxvwtp89jkywpcv93xgqcpqg6urd4k",
+      "nostrPubkey": ""
+    },
+    "bob": {
+      "nip69": "noffer1qqswxpkytms203mj2s83mjytqrme6tfezzlagpr7jyzcfxvda8y790sprfmhxue69uhhxarjvee8jtnndphkx6ewdejhgam0wf4sysp4xaskvv3sxdjxywfjxvcx2dtxvcek2vtxxgckydtyvcursde4vd3rjwfcxyer2cfnxc6rzwfhxy6rgd3hv5cr2ce4xgcrxefcxcmxgqcpqguv9yuh"
+    }
+  }
+}
