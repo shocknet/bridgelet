@@ -18,8 +18,8 @@ export function handleLnurlStaticIdentifier(req: Request, params: { username: st
     status: "OK",
     tag: "payRequest",
     callback: `https://${domain}/lnurlpay/${username}`,
+    maxSendable: 100000000,    
     minSendable: 1000,
-    maxSendable: 100000000,
     metadata: JSON.stringify([
       ["text/identifier", `${username}@${domain}`],
       ["text/plain", `Pay to ${username}`]
