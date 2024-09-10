@@ -83,7 +83,7 @@ Example using curl:
 
 ```bash
 curl -X POST \
-  http://localhost:3000/nip69 \
+  https://bridgelet.nip69.dev/nip69 \
   -H 'Content-Type: application/json' \
   -d '{"offer": "<offer1234>", "amount": 10000}'
 ```
