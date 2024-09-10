@@ -4,7 +4,7 @@ A minimalist LNURL-P and Lightning Address bridge that leverages [NIP-69](https:
 
 ## Getting Started
 
-This project was using [Bun](https://bun.sh/). You can install it with this one-liner:
+This project uses [Bun](https://bun.sh/). You can install it with this one-liner:
 
 ```
 curl -fsSL https://bun.sh/install | bash
@@ -24,13 +24,13 @@ Then,
    bun install
    ```
 
-3. Configure your `config.json`:
+3. Populate `config.json`:
    
    ```json
    {
      "domain": "your-domain.com",
      "aliases": {
-       "username": {
+       "bob": {
          "nip69": "noffer1...",
          "nostrPubkey": "optional_pubkey"
        }
