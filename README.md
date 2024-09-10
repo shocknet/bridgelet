@@ -24,11 +24,19 @@ Then,
    bun install
    ```
 
-3. Populate `config.json`:
+3. Create a `config.json`:
+
+    ```
+    cp config.json.example config.json
+    ```
+    
+
+
    
    ```json
    {
      "domain": "your-domain.com",
+     "port": 3000,
      "aliases": {
        "bob": {
          "nip69": "noffer1...",
