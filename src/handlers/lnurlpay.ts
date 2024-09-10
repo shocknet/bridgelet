@@ -30,6 +30,20 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
     });
   }
 
+  const amountMsat = parseInt(amount, 10);
+
+  if (isNaN(amountMsat) || amountMsat <= 0) {
+    return new Response(JSON.stringify({
+      status: "ERROR",
+      reason: "Invalid amount parameter"
+    }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const amountSat = amountMsat / 1000; // Convert millisatoshis to satoshis
+
   // Create the metadata string
   const metadata = JSON.stringify([
     ["text/plain", `Payment to ${username}@${domain}`],
@@ -46,7 +60,7 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         offer: userConfig.nip69,
-        amount: parseInt(amount)
+        amount: amountSat // Ensure amount is in satoshis
       })
     }), privateKey, config);
 
