@@ -52,7 +52,11 @@ const server = serve({
       
       return new Response(response.body, {
         status: response.status,
-        headers: { ...corsHeaders, ...response.headers }
+        headers: { 
+          ...corsHeaders, 
+          ...response.headers,
+          'Content-Type': 'application/json'
+        }
       });
     }
 
