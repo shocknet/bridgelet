@@ -12,9 +12,14 @@ const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 const privateKey = generatePrivateKey();
 console.log("Generated new private key for this session");
 
+// Update the getConfig function to include a port
 async function getConfig() {
   const configData = await fs.readFile(CONFIG_PATH, 'utf-8');
-  return JSON.parse(configData);
+  const config = JSON.parse(configData);
+  return {
+    ...config,
+    port: config.port || 3000 // Default to 3000 if not specified
+  };
 }
 
 // Define the type for LNURL endpoints
@@ -29,7 +34,8 @@ const lnurlEndpoints: LnurlEndpoints = {
   "/nip69": (req, params, privateKey, config) => handleNip69Offer(req, privateKey, config),
 };
 
-// Create the server
+// Update the server creation
+const config = await getConfig();
 const server = serve({
   async fetch(req) {
     const url = new URL(req.url);
@@ -46,10 +52,10 @@ const server = serve({
 
     return new Response("Not Found", { status: 404 });
   },
-  port: 3000,
+  port: config.port,
 });
 
-console.log("LNURL server running on http://localhost:3000");
+console.log(`LNURL server running on http://localhost:${config.port}`);
 
 // Helper function to extract params from URL
 function extractParams(endpoint: string, pathname: string) {

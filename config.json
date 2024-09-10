@@ -1,5 +1,6 @@
 {
   "domain": "bridgelet.nip69.dev",
+  "port": 3000,
   "aliases": {
     "alice": {
       "nip69": "noffer1qqs8dm297qxw57avt8vdpd7jqjzg75ce67ukc9q0ldhuh24tpgfagnsprfmhxue69uhhxarjvee8jtnndphkx6ewdejhgam0wf4syspjxcmnjvmx8yerzdmpxsmkxce5vsurwce4xa3nyctpvgunxdf3xajrqvmyv5mxxvpnxa3n2e3kx3nxxeryvcmxvwtp89jkywpcv93xgqcpqg6urd4k",
