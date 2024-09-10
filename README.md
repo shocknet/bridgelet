@@ -9,24 +9,23 @@ This project was using [Bun](https://bun.sh/). You can install it with this one-
 ```
 curl -fsSL https://bun.sh/install | bash
 ```
+
 Then,
 
 1. Clone the repository:
+
    ```
-   git clone https://github.com/yourusername/bridgelet.git
+   git clone https://github.com/shocknet/bridgelet.git && cd bridgelet
    ```
 
-2. Navigate to the project directory:
-   ```
-   cd bridgelet
-   ```
+2. Install dependencies:
 
-3. Install dependencies:
    ```
    bun install
    ```
 
-4. Configure your `config.json`:
+3. Configure your `config.json`:
+   
    ```json
    {
      "domain": "your-domain.com",
@@ -37,8 +36,10 @@ Then,
        }
      }
    }
-```
-5. Start the server:
+    ```
+
+4. Start the server:
+
    ```
    bun start
    ```
