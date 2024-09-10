@@ -5,6 +5,7 @@ import { handleNip69Offer } from "./handlers/nip69";
 import { promises as fs } from 'fs';
 import path from 'path';
 import { generatePrivateKey } from './utils/keys';
+import { cors } from "./utils/cors";
 
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 
@@ -12,7 +13,6 @@ const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 const privateKey = generatePrivateKey();
 console.log("Generated new private key for this session");
 
-// Update the getConfig function to include a port
 async function getConfig() {
   const configData = await fs.readFile(CONFIG_PATH, 'utf-8');
   const config = JSON.parse(configData);
@@ -34,10 +34,11 @@ const lnurlEndpoints: LnurlEndpoints = {
   "/nip69": (req, params, privateKey, config) => handleNip69Offer(req, privateKey, config),
 };
 
-// Update the server creation
 const config = await getConfig();
 const server = serve({
   async fetch(req) {
+    const corsHeaders = cors(req);
+
     const url = new URL(req.url);
     const endpoint = Object.keys(lnurlEndpoints).find((path) => {
       const regex = new RegExp(path.replace(/:\w+/g, "\\w+"));
@@ -47,10 +48,15 @@ const server = serve({
     if (endpoint) {
       const params = extractParams(endpoint, url.pathname);
       const config = await getConfig();
-      return lnurlEndpoints[endpoint](req, params, privateKey, config);
+      const response = await lnurlEndpoints[endpoint](req, params, privateKey, config);
+      
+      return new Response(response.body, {
+        status: response.status,
+        headers: { ...corsHeaders, ...response.headers }
+      });
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { status: 404, headers: corsHeaders });
   },
   port: config.port,
 });
