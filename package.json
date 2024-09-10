@@ -1,0 +1,19 @@
+{
+  "name": "bridgelet",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@noble/curves": "^1.0.0",
+    "@stablelib/xchacha20": "^2.0.0",
+    "bech32": "^2.0.0",
+    "bun": "latest",
+    "nostr-tools": "^2.7.2"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts"
+  }
+}
