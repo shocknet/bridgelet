@@ -3,22 +3,24 @@
   "port": 3000,
   "aliases": {
     "alice": {
-      "nostrPubkey": "alice_public_key_hex", // Optional: Nostr public key (hex). Required for NIP-05. Also used for NIP-57 Zap Receipt signing.
-      "relays": ["wss://relay.damus.io", "wss://nos.lol"], // Optional: List of relay URLs for NIP-05. Only used if nostrPubkey is also set.
-      "clink_offer": "alice_clink_offer_string_noffer1...", // Required for LNURL payments via CLINK Offer. (e.g., a NIP-69 compatible 'noffer' string).
-      "clink_debit": "alice_clink_debit_string_ndebit1..."  // Optional: CLINK Debit string for NIP-05 discovery.
+      "clink_offer": "alice_offer_string_noffer1...", // Required for payments
+      
+      // Optional: For NIP-05 identity (alice@your-domain.com) and NIP-57 Zap Receipts (pubkey for Zap Receipts is derived from clink_offer for LNURL Zaps)
+      "nostrPubkey": "alice_public_key_hex", 
+      "relays": ["wss://relay.yourdomain.com", "wss://relay2.yourdomain.com"], // Optional: Relays for NIP-05 discovery for this alias.
+      
+      // Optional: For NIP-05 discovery of a CLINK Debit string
+      "clink_debit": "alice_ndebit1..."
     },
     "bob": {
-      "nostrPubkey": "bob_public_key_hex",
-      "clink_offer": "bob_clink_offer_string_noffer1..." // Required for LNURL payments via CLINK Offer.
-      // Bob has NIP-05 & CLINK Offer, but no specific relays or CLINK Debit configured in this example.
+      "clink_offer": "bob_noffer...",
+      "nostrPubkey": "bob_public_key_hex" // Bob's NIP-05 identity
+      // Bob has an Offer for LNURL and key for NIP-05, but no specific relays or Debit discovery configured.
     },
     "carol": {
-      // Carol only uses LNURL-P via CLINK Offer. No NIP-05 or Zaps configured.
-      "clink_offer": "carol_clink_offer_string_noffer1..." // Required for LNURL payments via CLINK Offer.
-    },
-    "dave": {
-      "nostrPubkey": "dave_public_key_hex" // Dave is only configured for NIP-05, not for LNURL payments via CLINK.
+      // Carol is set up only for receiving LNURL payments via a CLINK Offer.
+      "clink_offer": "carol_noffer..." 
+      // No NIP-05 identity or Zap configuration for Carol via bridgelet directly.
     }
   }
 }

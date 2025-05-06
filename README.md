@@ -1,6 +1,6 @@
 # Bridgelet
 
-A minimalist LNURL-P and Lightning Address bridge that leverages [NIP-69](https://demo.nip69.dev) to fetch invoices from Lightning nodes that don't otherwise have the requisite networking. 
+A minimalist LNURL-P and Lightning Address bridge that leverages [CLINK Offers](https://clinkme.dev) to fetch invoices from Lightning nodes that don't otherwise have the requisite networking. 
 
 ## Getting Started
 
@@ -34,14 +34,15 @@ Then,
 
     ```json
     {
-      "domain": "your-domain.com", // Your domain where bridgelet is hosted
-      "port": 3000, // Port the server will listen on
+      "domain": "your-domain.com",
+      "port": 3000,
       "aliases": {
-        "your_alias": { // Example alias, will be usable as your_alias@your-domain.com
-          "nostrPubkey": "your_nostr_public_key_hex", // Optional: Nostr public key (hex). Required for NIP-05. Also used for NIP-57 Zap Receipt signing if present.
-          "relays": ["wss://relay.damus.io", "wss://nos.lol"], // Optional: List of relay URLs for NIP-05. Only used if nostrPubkey is also set.
-          "clink_offer": "your_clink_offer_string_noffer1...", // Required for LNURL-P functionality. This is your CLINK Offer string (e.g., NIP-69 compatible 'noffer').
-          "clink_debit": "your_clink_debit_string_ndebit1..."  // Optional: CLINK Debit string. If present, will be included in NIP-05 response for discovery.
+        "your_alias": { // your_alias@your-domain.com
+          "clink_offer": "noffer1...",
+          // Optional NIP-05 Values
+          "nostrPubkey": "your_nostr_public_key_hex", // For Verification
+          "relays": ["wss://relay.damus.io", "wss://nos.lol"],
+          "clink_debit": "ndebit1..."  // Debit string discovery
         }
         // Add more aliases as needed
       }
@@ -70,27 +71,28 @@ your-domain.com {
 ## API Reference
 
 ### 1. LNURL-pay Endpoint (`GET /.well-known/lnurlp/:username`)
-Initiates the LNURL-P flow for a specific user. Returns a JSON object with payment details. This relies on the `clink_offer` configured for the alias.
-If `nostrPubkey` is configured, it will be included in the response for NIP-57 Zap functionality.
+Initiates the LNURL-P flow for a specific user. Returns a JSON object with payment details.
+To support NIP-57 Zaps, `bridgelet` will include `allowsNostr: true` and set the `nostrPubkey` field in this response to the public key of the CLINK Offer service (extracted from the alias's configured `clink_offer` string). This `nostrPubkey` is the key expected to sign Zap Receipts for payments made via this LNURL-P flow.
 
-### 2. CLINK Offer Invoice Request (`POST /clink/get-invoice-from-offer`)
+### 2. CLINK Offer Invoice Request (`POST /offer`)
 This endpoint processes a CLINK Offer string and an amount to generate a BOLT11 invoice. It's used internally by the LNURL-P flow but can also be called directly.
 
 **Request Body (JSON):**
 ```json
 {
   "offer": "<clink_offer_string_noffer1...>",
-  "amount": 10000 // amount in satoshis
+  "amount_msats": 123000,
+  "zap_request": "<stringified_kind_9734_event_json>" // Optional, for NIP-57 Zaps
 }
 ```
-Returns a JSON object containing the BOLT11 invoice (`pr`).
+Returns a JSON object containing the BOLT11 invoice (`pr` nested under `invoice`).
 
 **Example using curl:**
 ```bash
 cURL -X POST \
   https://your-domain.com/clink/get-invoice-from-offer \
   -H 'Content-Type: application/json' \
-  -d '{"offer": "<clink_offer_string_noffer1...>", "amount": 10000}'
+  -d '{"offer": "<clink_offer_string_noffer1...>", "amount_msats": 123000}'
 ```
 
 ### 3. NIP-05 Verification Endpoint (`GET /.well-known/nostr.json?name=<username>`)

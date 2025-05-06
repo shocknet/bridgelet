@@ -1,7 +1,7 @@
 import { serve } from "bun";
 import { handleLnurlStaticIdentifier } from "./handlers/lnurlStaticIdentifier";
 import { handleLnurlPayRequest } from "./handlers/lnurlpay";
-import { handleClinkOfferInvoiceRequest } from "./handlers/nip69";
+import { handleClinkOfferInvoiceRequest } from "./handlers/clinkProcessor";
 import { handleNip05Verification } from "./handlers/nip05";
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -47,14 +47,30 @@ const server = serve({
       const currentConfig = await getConfig();
       const nip05Response = await handleNip05Verification(req, currentConfig);
       
-      const responseHeaders = { ...corsHeaders, ...nip05Response.headers };
-      if (!responseHeaders['Content-Type']) {
-        responseHeaders['Content-Type'] = 'application/json';
+      // Explicitly type combinedHeaders to satisfy TypeScript
+      const combinedHeaders: Record<string, string> = { 
+        ...(corsHeaders as Record<string, string>), // Assuming corsHeaders can be cast or is already Record
+      };
+
+      // Merge headers from nip05Response.headers, which might be a Headers object or plain object
+      if (nip05Response.headers) {
+        if (nip05Response.headers instanceof Headers) {
+          nip05Response.headers.forEach((value, key) => {
+            combinedHeaders[key] = value;
+          });
+        } else {
+          // It's a plain object, spread its properties
+          Object.assign(combinedHeaders, nip05Response.headers as Record<string, string>);
+        }
+      }
+
+      if (!combinedHeaders['Content-Type']) {
+        combinedHeaders['Content-Type'] = 'application/json';
       }
 
       return new Response(nip05Response.body, {
         status: nip05Response.status,
-        headers: responseHeaders
+        headers: combinedHeaders // HeadersInit can take Record<string, string>
       });
     }
 
@@ -65,8 +81,8 @@ const server = serve({
 
     if (endpoint) {
       const params = extractParams(endpoint, url.pathname);
-      const config = await getConfig();
-      const response = await lnurlEndpoints[endpoint](req, params, privateKey, config);
+      const currentConfig = await getConfig();
+      const response = await lnurlEndpoints[endpoint](req, params, privateKey, currentConfig);
       
       return new Response(response.body, {
         status: response.status,

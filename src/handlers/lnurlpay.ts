@@ -1,4 +1,4 @@
-import { handleClinkOfferInvoiceRequest } from './nip69';
+import { handleClinkOfferInvoiceRequest } from './clinkProcessor';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 
