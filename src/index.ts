@@ -1,7 +1,8 @@
 import { serve } from "bun";
 import { handleLnurlStaticIdentifier } from "./handlers/lnurlStaticIdentifier";
 import { handleLnurlPayRequest } from "./handlers/lnurlpay";
-import { handleNip69Offer } from "./handlers/nip69";
+import { handleClinkOfferInvoiceRequest } from "./handlers/nip69";
+import { handleNip05Verification } from "./handlers/nip05";
 import { promises as fs } from 'fs';
 import path from 'path';
 import { generatePrivateKey } from './utils/keys';
@@ -31,7 +32,7 @@ type LnurlEndpoints = {
 const lnurlEndpoints: LnurlEndpoints = {
   "/.well-known/lnurlp/:username": (req, params, privateKey, config) => handleLnurlStaticIdentifier(req, params as { username: string }, privateKey, config),
   "/lnurlpay/:username": async (req, params, privateKey, config) => await handleLnurlPayRequest(req, params as { username: string }, privateKey, config),
-  "/nip69": (req, params, privateKey, config) => handleNip69Offer(req, privateKey, config),
+  "/offer": (req, params, privateKey, config) => handleClinkOfferInvoiceRequest(req, privateKey, config),
 };
 
 const config = await getConfig();
@@ -40,6 +41,23 @@ const server = serve({
     const corsHeaders = cors(req);
 
     const url = new URL(req.url);
+
+    // Handle NIP-05 requests
+    if (url.pathname === "/.well-known/nostr.json" && req.method === "GET") {
+      const currentConfig = await getConfig();
+      const nip05Response = await handleNip05Verification(req, currentConfig);
+      
+      const responseHeaders = { ...corsHeaders, ...nip05Response.headers };
+      if (!responseHeaders['Content-Type']) {
+        responseHeaders['Content-Type'] = 'application/json';
+      }
+
+      return new Response(nip05Response.body, {
+        status: nip05Response.status,
+        headers: responseHeaders
+      });
+    }
+
     const endpoint = Object.keys(lnurlEndpoints).find((path) => {
       const regex = new RegExp(path.replace(/:\w+/g, "\\w+"));
       return regex.test(url.pathname);

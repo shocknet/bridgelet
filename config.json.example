@@ -1,13 +1,24 @@
 {
-  "domain": "bridgelet.nip69.dev",
+  "domain": "bridgelet.clink-playground.dev",
   "port": 3000,
   "aliases": {
     "alice": {
-      "nip69": "noffer1qqs8dm297qxw57avt8vdpd7jqjzg75ce67ukc9q0ldhuh24tpgfagnsprfmhxue69uhhxarjvee8jtnndphkx6ewdejhgam0wf4syspjxcmnjvmx8yerzdmpxsmkxce5vsurwce4xa3nyctpvgunxdf3xajrqvmyv5mxxvpnxa3n2e3kx3nxxeryvcmxvwtp89jkywpcv93xgqcpqg6urd4k",
-      "nostrPubkey": ""
+      "nostrPubkey": "alice_public_key_hex", // Optional: Nostr public key (hex). Required for NIP-05. Also used for NIP-57 Zap Receipt signing.
+      "relays": ["wss://relay.damus.io", "wss://nos.lol"], // Optional: List of relay URLs for NIP-05. Only used if nostrPubkey is also set.
+      "clink_offer": "alice_clink_offer_string_noffer1...", // Required for LNURL payments via CLINK Offer. (e.g., a NIP-69 compatible 'noffer' string).
+      "clink_debit": "alice_clink_debit_string_ndebit1..."  // Optional: CLINK Debit string for NIP-05 discovery.
     },
     "bob": {
-      "nip69": "noffer1qqswxpkytms203mj2s83mjytqrme6tfezzlagpr7jyzcfxvda8y790sprfmhxue69uhhxarjvee8jtnndphkx6ewdejhgam0wf4sysp4xaskvv3sxdjxywfjxvcx2dtxvcek2vtxxgckydtyvcursde4vd3rjwfcxyer2cfnxc6rzwfhxy6rgd3hv5cr2ce4xgcrxefcxcmxgqcpqguv9yuh"
+      "nostrPubkey": "bob_public_key_hex",
+      "clink_offer": "bob_clink_offer_string_noffer1..." // Required for LNURL payments via CLINK Offer.
+      // Bob has NIP-05 & CLINK Offer, but no specific relays or CLINK Debit configured in this example.
+    },
+    "carol": {
+      // Carol only uses LNURL-P via CLINK Offer. No NIP-05 or Zaps configured.
+      "clink_offer": "carol_clink_offer_string_noffer1..." // Required for LNURL payments via CLINK Offer.
+    },
+    "dave": {
+      "nostrPubkey": "dave_public_key_hex" // Dave is only configured for NIP-05, not for LNURL payments via CLINK.
     }
   }
 }

@@ -1,4 +1,4 @@
-import { handleNip69Offer } from './nip69';
+import { handleClinkOfferInvoiceRequest } from './nip69';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 
@@ -17,10 +17,23 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
   }
 
   const userConfig = aliases[username];
-  const url = new URL(req.url);
-  const amount = url.searchParams.get('amount');
+  
+  if (!userConfig.clink_offer) {
+    console.error(`CLINK Offer is not configured for alias: ${username}`);
+    return new Response(JSON.stringify({
+      status: "ERROR",
+      reason: `Payment processing not configured for user '${username}' (missing CLINK Offer).`
+    }), {
+      status: 500, 
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  if (!amount) {
+  const url = new URL(req.url);
+  const amountParam = url.searchParams.get('amount');
+  const nostrZapRequestString = url.searchParams.get('nostr');
+
+  if (!amountParam) {
     return new Response(JSON.stringify({
       status: "ERROR",
       reason: "Missing amount parameter"
@@ -30,7 +43,7 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
     });
   }
 
-  const amountMsat = parseInt(amount, 10);
+  const amountMsat = parseInt(amountParam, 10);
 
   if (isNaN(amountMsat) || amountMsat <= 0) {
     return new Response(JSON.stringify({
@@ -42,47 +55,66 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
     });
   }
 
-  const amountSat = amountMsat / 1000; // Convert millisatoshis to satoshis
-
-  // Create the metadata string
-  const metadata = JSON.stringify([
+  // The metadata defined here is per LUD-06 for the LNURL-Pay first response.
+  // It helps the paying client understand the context of the payment.
+  // The actual invoice description for CLINK Offers (especially with Zaps)
+  // will be determined by the CLINK Offer processing logic in handleClinkOfferInvoiceRequest.
+  const lnurlMetadata = JSON.stringify([
     ["text/plain", `Payment to ${username}@${domain}`],
     ["text/identifier", `${username}@${domain}`]
   ]);
-
-  // Calculate the hash of the metadata
-  const metadataHash = bytesToHex(sha256(new TextEncoder().encode(metadata)));
+  // metadataHash is not directly used in the call to handleClinkOfferInvoiceRequest,
+  // as that function will generate the invoice based on the CLINK offer / Zap request specifics.
 
   try {
-    // Use the handleNip69Offer function to get the invoice
-    const nip69Response = await handleNip69Offer(new Request('http://localhost/nip69', {
+    // Prepare the request for handleClinkOfferInvoiceRequest.
+    const clinkProcessingRequestBody: {offer: string, amount_msats: number, zap_request?: string} = {
+      offer: userConfig.clink_offer,
+      amount_msats: amountMsat 
+    };
+
+    if (nostrZapRequestString) {
+      // Basic validation: should be a JSON string. Deeper validation (e.g., parsing to check kind) can be added.
+      try {
+        JSON.parse(nostrZapRequestString); // Check if it's valid JSON
+        clinkProcessingRequestBody.zap_request = nostrZapRequestString;
+        console.log(`LNURL-pay: Including NIP-57 Zap Request for alias ${username}`);
+      } catch (e) {
+        console.warn(`LNURL-pay: 'nostr' query parameter for alias ${username} is not valid JSON, ignoring for Zap. Error:`, e);
+        // Optionally return an error to the client if a zap was clearly intended but malformed.
+        // For now, proceed without it, treating as a regular payment.
+      }
+    }
+
+    const clinkProcessingRequest = new Request(req.url, { // req.url for context, body is key
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        offer: userConfig.nip69,
-        amount: amountSat // Ensure amount is in satoshis
-      })
-    }), privateKey, config);
+      body: JSON.stringify(clinkProcessingRequestBody)
+    });
 
-    const responseData = await nip69Response.json();
+    const clinkResponse = await handleClinkOfferInvoiceRequest(clinkProcessingRequest, privateKey, config);
+    const responseData = await clinkResponse.json();
 
-    if (nip69Response.status !== 200) {
+    if (clinkResponse.status !== 200) {
       return new Response(JSON.stringify({
         status: "ERROR",
-        reason: responseData.error || "Failed to generate invoice"
+        reason: responseData.error || "Failed to generate invoice via CLINK Offer processing"
       }), {
-        status: nip69Response.status,
+        status: clinkResponse.status,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // TODO: Verify that the invoice includes the correct description hash
-    // This would require parsing the BOLT11 invoice and checking its description hash
+    // LUD-06 PayRequest second response structure
+    const payResponse: { pr: string, routes: any[], successAction?: any } = {
+      pr: responseData.invoice.bolt11, 
+      routes: [] 
+    };
+    
+    // Example: LUD-09 successAction can be configured per user
+    // if (userConfig.successAction) { payResponse.successAction = userConfig.successAction; }
 
-    return new Response(JSON.stringify({
-      pr: responseData.invoice.bolt11,
-      routes: []
-    }), {
+    return new Response(JSON.stringify(payResponse), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
