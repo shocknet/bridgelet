@@ -2,8 +2,8 @@ import { handleClinkOfferInvoiceRequest } from './clinkProcessor';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 
-export async function handleLnurlPayRequest(req: Request, params: { username: string }, privateKey: string, config: any) {
-  const { username } = params;
+export async function handleLnurlPayRequest(req: Request, params: Record<string, string>, privateKey: string, config: any) {
+  const username = params.username;
   const { domain, aliases } = config;
 
   if (!aliases[username]) {
@@ -92,7 +92,7 @@ export async function handleLnurlPayRequest(req: Request, params: { username: st
       body: JSON.stringify(clinkProcessingRequestBody)
     });
 
-    const clinkResponse = await handleClinkOfferInvoiceRequest(clinkProcessingRequest, privateKey, config);
+    const clinkResponse = await handleClinkOfferInvoiceRequest(clinkProcessingRequest, {}, privateKey, config);
     const responseData = await clinkResponse.json();
 
     if (clinkResponse.status !== 200) {

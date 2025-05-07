@@ -1,7 +1,7 @@
 import { decodeNoffer } from '../handlers/decoding'; // Adjusted path
 
-export function handleLnurlStaticIdentifier(req: Request, params: { username: string }, privateKey: string, config: any) {
-  const { username } = params;
+export function handleLnurlStaticIdentifier(req: Request, params: Record<string, string>, privateKey: string, config: any) {
+  const username = params.username;
   const { domain, aliases } = config;
 
   if (!aliases[username]) {

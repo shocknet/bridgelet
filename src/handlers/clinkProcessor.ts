@@ -13,7 +13,7 @@ interface NostrOffer {
   priceInSats?: number;
 }
 
-export async function handleClinkOfferInvoiceRequest(req: Request, privateKeyHex: string, config: any) {
+export async function handleClinkOfferInvoiceRequest(req: Request, params: Record<string, string>, privateKeyHex: string, config: any) {
   try {
     console.log("Received request to handle CLINK Offer for invoice generation");
 

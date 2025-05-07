@@ -8,7 +8,7 @@ export async function handleNip05Verification(req: Request, config: any) {
       reason: "Missing 'name' query parameter."
     }), {
       status: 400,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -42,7 +42,7 @@ export async function handleNip05Verification(req: Request, config: any) {
 
     return new Response(JSON.stringify(responsePayload), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json" },
     });
   } else {
     return new Response(JSON.stringify({
@@ -50,7 +50,7 @@ export async function handleNip05Verification(req: Request, config: any) {
       reason: `User '${name}' not found or nostrPubkey not configured.`
     }), {
       status: 404,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 } 
