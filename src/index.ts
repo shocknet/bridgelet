@@ -41,23 +41,29 @@ const server = serve({
     const corsHeaders = cors(req);
     const url = new URL(req.url);
 
-    // Handle NIP-05 CORS Preflight (OPTIONS) requests
-    if (url.pathname === "/.well-known/nostr.json" && req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204, // No Content
-        headers: {
-          // Allow requests from any origin
-          "Access-Control-Allow-Origin": "*", 
-          // Allow the GET method
-          "Access-Control-Allow-Methods": "GET, OPTIONS", 
-          // Allow common headers, adjust if clients send others
-          "Access-Control-Allow-Headers": "Content-Type, Accept, Origin", 
-          // Optional: How long the preflight response can be cached
-          "Access-Control-Max-Age": "86400", // 24 hours
-          // Explicitly setting Vary: Origin might be needed by some browsers/proxies
-          "Vary": "Origin"
-        }
-      });
+    // Handle OPTIONS requests for all API endpoints needing CORS
+    if (req.method === "OPTIONS") {
+      // Check if the path matches any of our CORS-enabled API endpoint patterns
+      const isNip05Path = url.pathname === "/.well-known/nostr.json";
+      const isLnurlpPath = /\/.well-known\/lnurlp\/.+/.test(url.pathname);
+      const isLnurlpayPath = /\/lnurlpay\/.+/.test(url.pathname);
+      const isOfferPath = url.pathname === "/offer";
+
+      if (isNip05Path || isLnurlpPath || isLnurlpayPath || isOfferPath) {
+        return new Response(null, {
+          status: 204, // No Content
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS", // Allow GET/POST for the actual requests
+            "Access-Control-Allow-Headers": "Content-Type, Accept, Origin, Authorization", // Include Authorization if needed later
+            "Access-Control-Max-Age": "86400", // 24 hours
+            "Vary": "Origin"
+          }
+        });
+      } else {
+        // If OPTIONS request doesn't match known API paths, return a simple default response or 404
+        return new Response(null, { status: 404 });
+      }
     }
 
     // Handle NIP-05 GET requests
@@ -65,8 +71,6 @@ const server = serve({
       const currentConfig = await getConfig();
       const nip05Response = await handleNip05Verification(req, currentConfig);
       
-      // Merge headers, ensuring Access-Control-Allow-Origin: "*" from handleNip05Verification is included.
-      // The cors(req) might add other headers, but ACAO should come from the handler.
       const combinedHeaders: Record<string, string> = { 
         ...(corsHeaders as Record<string, string>), 
       };
@@ -82,19 +86,19 @@ const server = serve({
       if (!combinedHeaders['Content-Type']) {
         combinedHeaders['Content-Type'] = 'application/json';
       }
-      // Ensure ACAO is present for the GET request too (belt and braces)
       if (!combinedHeaders['Access-Control-Allow-Origin']) {
           combinedHeaders['Access-Control-Allow-Origin'] = '*';
       }
-
       return new Response(nip05Response.body, {
         status: nip05Response.status,
         headers: combinedHeaders 
       });
     }
 
+    // Handle LNURL and /offer endpoints (GET/POST)
     const endpoint = Object.keys(lnurlEndpoints).find((path) => {
-      const regex = new RegExp(path.replace(/:\w+/g, "\\w+"));
+      // Use a regex that matches the full path for dynamic routes
+      const regex = new RegExp(`^${path.replace(/:\w+/g, "([^/]+)")}$`);
       return regex.test(url.pathname);
     });
 
@@ -103,13 +107,29 @@ const server = serve({
       const currentConfig = await getConfig();
       const response = await lnurlEndpoints[endpoint](req, params, privateKey, currentConfig);
       
+      // Ensure CORS headers are on the actual response for these endpoints too
+      const responseHeaders: Record<string, string> = { 
+         ...(corsHeaders as Record<string, string>),
+      };
+      if (response.headers) {
+         if (response.headers instanceof Headers) {
+            response.headers.forEach((value, key) => {
+               responseHeaders[key] = value;
+            });
+         } else {
+            Object.assign(responseHeaders, response.headers as Record<string, string>);
+         }
+      }
+       if (!responseHeaders['Access-Control-Allow-Origin']) {
+           responseHeaders['Access-Control-Allow-Origin'] = '*'; // Allow all origins
+       }
+       if (!responseHeaders['Content-Type']) {
+            responseHeaders['Content-Type'] = 'application/json'; // Default to JSON
+       }
+
       return new Response(response.body, {
         status: response.status,
-        headers: { 
-          ...corsHeaders, 
-          ...response.headers,
-          'Content-Type': 'application/json'
-        }
+        headers: responseHeaders
       });
     }
 
