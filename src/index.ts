@@ -39,38 +39,57 @@ const config = await getConfig();
 const server = serve({
   async fetch(req) {
     const corsHeaders = cors(req);
-
     const url = new URL(req.url);
 
-    // Handle NIP-05 requests
+    // Handle NIP-05 CORS Preflight (OPTIONS) requests
+    if (url.pathname === "/.well-known/nostr.json" && req.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204, // No Content
+        headers: {
+          // Allow requests from any origin
+          "Access-Control-Allow-Origin": "*", 
+          // Allow the GET method
+          "Access-Control-Allow-Methods": "GET, OPTIONS", 
+          // Allow common headers, adjust if clients send others
+          "Access-Control-Allow-Headers": "Content-Type, Accept, Origin", 
+          // Optional: How long the preflight response can be cached
+          "Access-Control-Max-Age": "86400", // 24 hours
+          // Explicitly setting Vary: Origin might be needed by some browsers/proxies
+          "Vary": "Origin"
+        }
+      });
+    }
+
+    // Handle NIP-05 GET requests
     if (url.pathname === "/.well-known/nostr.json" && req.method === "GET") {
       const currentConfig = await getConfig();
       const nip05Response = await handleNip05Verification(req, currentConfig);
       
-      // Explicitly type combinedHeaders to satisfy TypeScript
+      // Merge headers, ensuring Access-Control-Allow-Origin: "*" from handleNip05Verification is included.
+      // The cors(req) might add other headers, but ACAO should come from the handler.
       const combinedHeaders: Record<string, string> = { 
-        ...(corsHeaders as Record<string, string>), // Assuming corsHeaders can be cast or is already Record
+        ...(corsHeaders as Record<string, string>), 
       };
-
-      // Merge headers from nip05Response.headers, which might be a Headers object or plain object
       if (nip05Response.headers) {
         if (nip05Response.headers instanceof Headers) {
           nip05Response.headers.forEach((value, key) => {
             combinedHeaders[key] = value;
           });
         } else {
-          // It's a plain object, spread its properties
           Object.assign(combinedHeaders, nip05Response.headers as Record<string, string>);
         }
       }
-
       if (!combinedHeaders['Content-Type']) {
         combinedHeaders['Content-Type'] = 'application/json';
+      }
+      // Ensure ACAO is present for the GET request too (belt and braces)
+      if (!combinedHeaders['Access-Control-Allow-Origin']) {
+          combinedHeaders['Access-Control-Allow-Origin'] = '*';
       }
 
       return new Response(nip05Response.body, {
         status: nip05Response.status,
-        headers: combinedHeaders // HeadersInit can take Record<string, string>
+        headers: combinedHeaders 
       });
     }
 
