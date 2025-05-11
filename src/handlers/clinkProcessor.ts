@@ -65,16 +65,16 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     const publicKey = getPublicKey(privateKey);
     const sharedSecret = getSharedSecret(privateKeyHex, nostrOfferDetails.receiverPubKey);
 
-    const backendPayload: {offer: string, amount_sats: number, zap_request?: string} = {
+    const backendPayload: {offer: string, amount: number, zap?: string} = {
       offer: nostrOfferDetails.offerId,
-      amount_sats: amount_sats
+      amount: amount_sats
     };
 
     if (zap_request && typeof zap_request === 'string') {
       try {
         JSON.parse(zap_request);
-        backendPayload.zap_request = zap_request;
-        console.log("CLINK Offer Processor: Forwarding NIP-57 zap_request to backend.");
+        backendPayload.zap = zap_request;
+        console.log("CLINK Offer Processor: Forwarding NIP-57 zap to backend.");
       } catch (e) {
         console.warn("CLINK Offer Processor: Received zap_request was not valid JSON. Not forwarding. Error:", e);
       }
