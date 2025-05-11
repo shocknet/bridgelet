@@ -108,9 +108,9 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
         '#e': [requestEvent.id]
       }], {
         onevent: (e: Event) => {
-          const clinkVersionTag = e.tags.find(tag => tag[0] === 'clink_version' && tag[1] === '1');
-          if (!clinkVersionTag) {
-            console.warn("Received response event without or with wrong clink_version tag. Ignoring.", e);
+          const clinkVersionTag = e.tags.find(tag => tag[0] === 'clink_version');
+          if (clinkVersionTag && clinkVersionTag[1] !== '1') {
+            console.warn("Received response event with wrong clink_version tag. Ignoring.", e);
             return;
           }
           console.log("Received event from relay (expected CLINK invoice event):", e);
