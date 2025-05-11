@@ -25,6 +25,17 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
       return new Response(JSON.stringify({ error: "Invalid or missing amount_msats", code: 5 }), { status: 400 });
     }
 
+    if (amount_msats % 1000 !== 0) {
+      console.error("Non-integer sat amount: msats must be a multiple of 1000");
+      return new Response(JSON.stringify({ error: "Amount must be a whole number of sats (multiples of 1000 msats) for Lightning payments.", code: 5 }), { status: 400 });
+    }
+
+    const amount_sats = Math.floor(amount_msats / 1000);
+    if (amount_sats <= 0) {
+      console.error("Amount in sats must be at least 1");
+      return new Response(JSON.stringify({ error: "Amount in sats must be at least 1", code: 5 }), { status: 400 });
+    }
+
     const nostrOfferDetails = decodeNostrOffer(offer);
     console.log("Decoded CLINK Offer details:", nostrOfferDetails);
 
@@ -34,10 +45,10 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     }
 
     if (nostrOfferDetails.pricingType === 0 && nostrOfferDetails.priceInSats !== undefined) {
-      if (nostrOfferDetails.priceInSats !== amount_msats) {
-        console.error(`Amount mismatch for fixed price CLINK Offer. Expected: ${nostrOfferDetails.priceInSats} msats, Got: ${amount_msats} msats`);
+      if (nostrOfferDetails.priceInSats !== amount_sats) {
+        console.error(`Amount mismatch for fixed price CLINK Offer. Expected: ${nostrOfferDetails.priceInSats} sats, Got: ${amount_sats} sats`);
         return new Response(JSON.stringify({ 
-          error: `Amount mismatch for fixed price offer. Expected ${nostrOfferDetails.priceInSats} msats.`, 
+          error: `Amount mismatch for fixed price offer. Expected ${nostrOfferDetails.priceInSats} sats.`, 
           code: 5 
         }), { status: 400 });
       }
@@ -54,9 +65,9 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     const publicKey = getPublicKey(privateKey);
     const sharedSecret = getSharedSecret(privateKeyHex, nostrOfferDetails.receiverPubKey);
 
-    const backendPayload: {offer: string, amount_msats: number, zap_request?: string} = {
+    const backendPayload: {offer: string, amount_sats: number, zap_request?: string} = {
       offer: nostrOfferDetails.offerId,
-      amount_msats: amount_msats
+      amount_sats: amount_sats
     };
 
     if (zap_request && typeof zap_request === 'string') {
