@@ -3,7 +3,7 @@ import { getEventHash, finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import { Relay } from 'nostr-tools/relay';
 import { hexToBytes } from '@noble/hashes/utils';
 import { decodeNoffer } from './decoding';
-import { getSharedSecret, encryptData, decryptData, decodePayload, encodePayload } from '../utils/encryption';
+import { encryptData, decryptData } from '../utils/encryption';
 
 interface NostrOffer {
   receiverPubKey: string;
@@ -58,12 +58,8 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     const relay = await Relay.connect(nostrOfferDetails.relayUrl);
     console.log(`Connected to relay: ${relay.url}`);
 
-    if (privateKeyHex.length !== 64) {
-      throw new Error('Invalid private key length. Expected 64 characters.');
-    }
     const privateKey = hexToBytes(privateKeyHex);
     const publicKey = getPublicKey(privateKey);
-    const sharedSecret = getSharedSecret(privateKeyHex, nostrOfferDetails.receiverPubKey);
 
     const backendPayload: {offer: string, amount: number, zap?: string} = {
       offer: nostrOfferDetails.offerId,
@@ -80,10 +76,7 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
       }
     }
 
-    const encryptedContent = encryptData(JSON.stringify(backendPayload), sharedSecret);
-    const encodedContent = encodePayload(encryptedContent);
-    console.log("Encrypted and encoded content:", encodedContent);
-
+    const encryptedContent = encryptData(JSON.stringify(backendPayload), privateKeyHex, nostrOfferDetails.receiverPubKey);
     const requestEvent: Event = {
       kind: 21001,
       pubkey: publicKey,
@@ -92,7 +85,7 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
         ['p', nostrOfferDetails.receiverPubKey],
         ["clink_version", "1"]
       ],
-      content: encodedContent,
+      content: encryptedContent,
       id: '',
       sig: ''
     };
@@ -137,10 +130,7 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
       }, 30000);
     });
 
-    const encryptedPayload = decodePayload(invoiceEvent.content);
-    console.log("Decoded encrypted payload:", encryptedPayload);
-
-    const decryptedContent = decryptData(encryptedPayload, sharedSecret);
+    const decryptedContent = decryptData(invoiceEvent.content, privateKeyHex, nostrOfferDetails.receiverPubKey);
     console.log("Decrypted invoice event content:", decryptedContent);
 
     const invoice = JSON.parse(decryptedContent);
