@@ -61,11 +61,19 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     const privateKey = hexToBytes(privateKeyHex);
     const publicKey = getPublicKey(privateKey);
 
-    const backendPayload: {offer: string, amount: number, zap?: string} = {
+    // Add payer_data if present in the request
+    let payer_data: any = undefined;
+    if (typeof req.json === 'function') {
+      const body = await req.json();
+      if (body.payer_data) {
+        payer_data = body.payer_data;
+      }
+    }
+
+    const backendPayload: {offer: string, amount: number, zap?: string, payer_data?: any} = {
       offer: nostrOfferDetails.offerId,
       amount: amount_sats
     };
-
     if (zap_request && typeof zap_request === 'string') {
       try {
         JSON.parse(zap_request);
@@ -74,6 +82,9 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
       } catch (e) {
         console.warn("CLINK Offer Processor: Received zap_request was not valid JSON. Not forwarding. Error:", e);
       }
+    }
+    if (payer_data) {
+      backendPayload.payer_data = payer_data;
     }
 
     const encryptedContent = encryptData(JSON.stringify(backendPayload), privateKeyHex, nostrOfferDetails.receiverPubKey);
@@ -136,15 +147,15 @@ export async function handleClinkOfferInvoiceRequest(req: Request, params: Recor
     const invoice = JSON.parse(decryptedContent);
     console.log("Parsed invoice from event content:", invoice);
 
-    if (invoice && invoice.res === "ok" && invoice.bolt11) {
+    if (invoice && invoice.bolt11) {
       return new Response(JSON.stringify({ 
         status: "OK", 
         message: "Offer processed, invoice retrieved", 
         invoice: { bolt11: invoice.bolt11 }
       }), { status: 200 });
-    } else if (invoice && invoice.res === "error" && invoice.reason) {
-      console.error("Received error response from backend node:", invoice.reason);
-      return new Response(JSON.stringify({ error: invoice.reason, code: 2 }), { status: 500 });
+    } else if (invoice && invoice.error) {
+      console.error("Received error response from backend node:", invoice.error);
+      return new Response(JSON.stringify({ error: invoice.error, code: 2 }), { status: 500 });
     } else {
       console.error("Invalid or unexpected response structure from backend node:", invoice);
       throw new Error("Invalid response structure from backend CLINK processing node");
