@@ -99,8 +99,8 @@ cURL -X POST \
 Provides NIP-05 verification. If the alias `username` has a `nostrPubkey` in `config.json`, it returns a JSON object including:
 - `names`: Standard NIP-05 name-to-pubkey mapping.
 - `relays`: Optional, if configured for the alias.
-- `clink_offer`: Optional, the CLINK Offer string for the alias, if configured.
-- `clink_debit`: Optional, the CLINK Debit string for the alias, if configured.
+- `clink_offer`: Optional. When the alias has an offer, a map from the local name to that `noffer`.
+- `clink_debit`: Optional. When the alias has a debit pointer, a map from the local name to that `ndebit`.
 
 **Example NIP-05 Query & Response (for `your_alias` configured with all fields):**
 
@@ -116,8 +116,12 @@ Response:
   "relays": {
     "your_nostr_public_key_hex": ["wss://relay.damus.io", "wss://nos.lol"]
   },
-  "clink_offer": "your_clink_offer_string_noffer1...",
-  "clink_debit": "your_clink_debit_string_ndebit1..."
+  "clink_offer": {
+    "your_alias": "noffer1..."
+  },
+  "clink_debit": {
+    "your_alias": "ndebit1..."
+  }
 }
 ```
 (The `relays`, `clink_offer`, and `clink_debit` fields are only present if configured for the alias. `nostrPubkey` is required for NIP-05 functionality itself.)

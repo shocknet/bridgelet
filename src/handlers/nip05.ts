@@ -1,5 +1,12 @@
 import * as nip19 from 'nostr-tools/nip19';
 
+function pointerByName(name: string, value: unknown): Record<string, string> | undefined {
+  if (typeof value !== 'string' || !value) {
+    return undefined;
+  }
+  return { [name]: value };
+}
+
 export async function handleNip05Verification(req: Request, config: any) {
   const url = new URL(req.url);
   const name = url.searchParams.get('name')?.toLowerCase();
@@ -39,8 +46,8 @@ export async function handleNip05Verification(req: Request, config: any) {
     const responsePayload: {
       names: Record<string, string>,
       relays?: Record<string, string[]>,
-      clink_offer?: string,
-      clink_debit?: string
+      clink_offer?: Record<string, string>,
+      clink_debit?: Record<string, string>
     } = {
       names: {
         [name]: hexPubkey
@@ -53,12 +60,14 @@ export async function handleNip05Verification(req: Request, config: any) {
       };
     }
 
-    if (aliasConfig.clink_offer && typeof aliasConfig.clink_offer === 'string') {
-      responsePayload.clink_offer = aliasConfig.clink_offer;
+    const clinkOffer = pointerByName(name, aliasConfig.clink_offer);
+    if (clinkOffer) {
+      responsePayload.clink_offer = clinkOffer;
     }
 
-    if (aliasConfig.clink_debit && typeof aliasConfig.clink_debit === 'string') {
-      responsePayload.clink_debit = aliasConfig.clink_debit;
+    const clinkDebit = pointerByName(name, aliasConfig.clink_debit);
+    if (clinkDebit) {
+      responsePayload.clink_debit = clinkDebit;
     }
 
     return new Response(JSON.stringify(responsePayload), {
